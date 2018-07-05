@@ -9,13 +9,17 @@ import (
 )
 
 var (
-	dataFile = flag.String("data-file", "./ip.txt", "Path to file which contains list of IP-addresses")
+	dataFile    = flag.String("data-file", "./ip.txt", "Path to file which contains list of IP-addresses")
+	defaultPort = flag.String("port", "8080", "If you want to set default port to all addresses")
 )
 
 func main() {
 	flag.Parse()
 
 	ipx := loadIP(*dataFile)
+	for key, v := range ipx {
+		ipx[key] = v + ":3128"
+	}
 	srv := goproxy.New(":8081", ipx)
 	srv.Start()
 }
