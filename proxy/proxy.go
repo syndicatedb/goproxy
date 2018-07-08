@@ -1,6 +1,8 @@
 package proxy
 
 import (
+	"crypto/tls"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -9,38 +11,60 @@ import (
 )
 
 /*
+Provider - proxy provider. Fabric for proxy clients
+*/
+type Provider struct {
+	proxyServerAddress string // HTTP proxy server address
+}
+
+/*
 Client - proxy client that connects to Proxy service and gets new IP for proxy
 Otherwise - inits default http.Client
 */
 type Client struct {
-	key                string
-	proxyServerAddress string // HTTP proxy server address
-	client             *http.Client
+	key    string
+	client *http.Client
 }
 
-// New - Client constructor
-func New(proxyServerAddr string, key string) *Client {
-	return &Client{
-		key:                key,
+// New - Provider constructor
+func New(proxyServerAddr string) *Provider {
+	return &Provider{
 		proxyServerAddress: proxyServerAddr,
-		client:             &http.Client{},
 	}
 }
 
-// ReNew - getting new IP address
-func (c *Client) ReNew() {
-	proxyAddr, err := getProxyAddress(c.proxyServerAddress, c.key)
+// NewClient - Client constructor
+func (p *Provider) NewClient(key string) *Client {
+	c := Client{
+		key:    key,
+		client: p.obtain(key),
+	}
+	return &c
+}
+
+// obtain - getting new IP address
+func (p *Provider) obtain(key string) (client *http.Client) {
+	var err error
+	client = &http.Client{}
+	proxyAddr, err := getProxyAddress(p.proxyServerAddress, key)
 	if err != nil {
 		log.Println("[ERROR] Getting proxy IP: ", err)
 	}
-	if err == nil {
-		// Setting Proxy
-		if proxyURL, err := url.Parse(proxyAddr); err == nil {
-			c.client.Transport = &http.Transport{
-				Proxy: http.ProxyURL(proxyURL),
-			}
+	// Setting Proxy
+	var proxyURL *url.URL
+	if proxyURL, err = url.Parse("http://" + proxyAddr); err == nil {
+		client.Transport = &http.Transport{
+			Proxy:           http.ProxyURL(proxyURL),
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			// Disable HTTP/2.
+			TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
 		}
 	}
+	if err != nil {
+		fmt.Println("Error parsing proxy IP: ", err)
+	}
+
+	return
 }
 
 // Do - HTTP request doer

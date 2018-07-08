@@ -18,7 +18,7 @@ func main() {
 
 	ipx := loadIP(*dataFile)
 	for key, v := range ipx {
-		ipx[key] = v + ":3128"
+		ipx[key] = v + ":58378"
 	}
 	srv := goproxy.New(":8081", ipx)
 	srv.Start()
