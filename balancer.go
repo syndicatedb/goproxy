@@ -1,8 +1,11 @@
 package goproxy
 
+import "sync"
+
 type balancer struct {
 	list  []IP
 	state map[string]int
+	sync.Mutex
 }
 
 // IP - struct that contains IP address
@@ -19,6 +22,9 @@ func newBalancer(ipx []string) *balancer {
 }
 
 func (b *balancer) issue(key string) (ip string, err error) {
+	b.Lock()
+	defer b.Unlock()
+
 	var pos int // last position in slice for this key
 	pos = b.state[key]
 	index := len(b.list) - 1

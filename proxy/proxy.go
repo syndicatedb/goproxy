@@ -13,7 +13,11 @@ import (
 /*
 Provider - proxy provider. Fabric for proxy clients
 */
-type Provider struct {
+type Provider interface {
+	NewClient(key string) Client
+}
+
+type provider struct {
 	proxyServerAddress string // HTTP proxy server address
 }
 
@@ -21,32 +25,39 @@ type Provider struct {
 Client - proxy client that connects to Proxy service and gets new IP for proxy
 Otherwise - inits default http.Client
 */
-type Client struct {
-	key    string
-	client *http.Client
+type Client interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+type proxyClient struct {
+	key       string
+	proxyAddr string
+	client    *http.Client
 }
 
 // New - Provider constructor
-func New(proxyServerAddr string) *Provider {
-	return &Provider{
+func New(proxyServerAddr string) Provider {
+	return &provider{
 		proxyServerAddress: proxyServerAddr,
 	}
 }
 
 // NewClient - Client constructor
-func (p *Provider) NewClient(key string) *Client {
-	c := Client{
-		key:    key,
-		client: p.obtain(key),
+func (p *provider) NewClient(key string) Client {
+	client, proxyAddr := p.obtain(key)
+	c := proxyClient{
+		key:       key,
+		client:    client,
+		proxyAddr: proxyAddr,
 	}
 	return &c
 }
 
 // obtain - getting new IP address
-func (p *Provider) obtain(key string) (client *http.Client) {
+func (p *provider) obtain(key string) (client *http.Client, proxyAddr string) {
 	var err error
 	client = &http.Client{}
-	proxyAddr, err := getProxyAddress(p.proxyServerAddress, key)
+	proxyAddr, err = getProxyAddress(p.proxyServerAddress, key)
 	if err != nil {
 		log.Println("[ERROR] Getting proxy IP: ", err)
 	}
@@ -68,7 +79,7 @@ func (p *Provider) obtain(key string) (client *http.Client) {
 }
 
 // Do - HTTP request doer
-func (c *Client) Do(req *http.Request) (*http.Response, error) {
+func (c *proxyClient) Do(req *http.Request) (*http.Response, error) {
 	return c.client.Do(req)
 }
 
