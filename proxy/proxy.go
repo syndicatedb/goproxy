@@ -60,6 +60,7 @@ func (p *provider) obtain(key string) (client *http.Client, proxyAddr string) {
 	proxyAddr, err = getProxyAddress(p.proxyServerAddress, key)
 	if err != nil {
 		log.Println("[ERROR] Getting proxy IP: ", err)
+		return
 	}
 	// Setting Proxy
 	var proxyURL *url.URL
