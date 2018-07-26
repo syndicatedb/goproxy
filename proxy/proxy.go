@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 /*
@@ -70,6 +72,10 @@ func (p *provider) obtain(key string) (client *http.Client, proxyAddr string) {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			// Disable HTTP/2.
 			TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
+			Dial: (&net.Dialer{
+				Timeout:   5 * time.Second,
+				KeepAlive: 0,
+			}).Dial,
 		}
 	}
 	if err != nil {
