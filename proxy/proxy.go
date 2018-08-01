@@ -17,6 +17,7 @@ Provider - proxy provider. Fabric for proxy clients
 */
 type Provider interface {
 	NewClient(key string) Client
+	IP() string
 }
 
 type provider struct {
@@ -53,6 +54,12 @@ func (p *provider) NewClient(key string) Client {
 		proxyAddr: proxyAddr,
 	}
 	return &c
+}
+
+// IP - returning proxy IP address
+func (p *provider) IP() string {
+	_, proxyAddr := p.obtain("")
+	return proxyAddr
 }
 
 // obtain - getting new IP address
