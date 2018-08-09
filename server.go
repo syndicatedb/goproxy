@@ -48,10 +48,8 @@ func (srv *Server) issue(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", contentTypeJSON)
 	}
 	if err != nil {
-		log.Println("Error on issue: ", err)
 		http.Error(w, resp.error(format), http.StatusInternalServerError)
 	}
-	log.Println("Ending")
 	fmt.Fprint(w, resp.data(format))
 }
 
